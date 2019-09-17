@@ -1,0 +1,396 @@
+{% extends "cms/base.html" %}
+
+{% from "common/_macros.html" import static %}
+{% block title %}
+    门锁管理
+{% endblock %}
+{% block head %}
+    <style>
+        .handle-lock {
+            margin-left: 5px;
+            margin-right: 5px;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+        }
+
+        .pull-right {
+            margin-bottom: 20px;
+        }
+
+        .pull-right button {
+            margin-left: 30px;
+        }
+
+        tr th {
+            text-align: center;
+        }
+
+        tr td {
+            text-align: center;
+        }
+    </style>
+{% endblock %}
+{% block page_title %}
+    门锁管理
+{% endblock %}
+
+{% block page_inner %}
+    <div class="pull-right">
+        <a href="javascript:location.replace(location.href);" class="btn btn-danger">刷新状态</a>
+        <button id="add-lock-btn" type="button" class="btn btn-danger">添加设备</button>
+    </div>
+    <table class="table table-bordered table-hover">
+        <thead>
+        <tr class="row">
+            <th class="col-md-1">锁ID</th>
+            <th class="col-md-3">门室</th>
+            <th class="col-md-1">状态</th>
+            <th class="col-md-3">创建日期</th>
+            <th class="col-md-4">操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for lock in locks %}
+            <tr class="row">
+                <td class="col-md-1">{{ lock.lock_id }}</td>
+                <td class="col-md-3">{{ lock.remark }}</td>
+                {% if lock.status=='1' %}
+                    <td class="col-md-1">开</td>
+                {% else %}
+                    <td class="col-md-1">关</td>
+                {% endif %}
+                <td class="col-md-3">{{ lock.time }}</td>
+                <td class="col-md-4">
+                    <div class="handle-lock">
+                        <button data-id="{{ lock.id }}" type="button" class="delete-lock btn btn-danger btn-xs">移除该锁
+                        </button>
+                        <button data-toggle="modal" data-id="{{ lock.id }}" type="button"
+                                class="lock-info btn btn-danger btn-xs">修改信息
+                        </button>
+                        <button data-id="{{ lock.id }}" type="button" class="look-per btn btn-danger btn-xs">查看授权
+                        </button>
+                        {% if user.permission>=15 %}
+                            {% if lock.status=='1' %}
+                                <button disabled type="button" class="btn btn-warning btn-xs">远程开锁</button>
+                            {% else %}
+                                <button data-remark="{{ lock.remark }}" data-id="{{ lock.id }}" type="button"
+                                        class="remote-control btn btn-warning btn-xs">远程开锁
+                                </button>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+        <script>
+            $(function () {
+                $('.remote-control').click(function (event) {
+                    /**
+                     * 查看远程控制开锁模态框
+                     */
+                    event.preventDefault();
+
+                    window.lock_id = $(this).attr('data-id');
+
+                    $('#lock-remark').html($(this).attr('data-remark'));
+                    $('#open-lock-caveat').modal('show');
+                    /**
+                     *远程开锁事件
+                     */
+                    $('#open-lock-btn').click(function (event) {
+                        event.preventDefault();
+                        var lock_id = window.lock_id;
+                        zlajax.post({
+                            'url': '{{ url_for('cms.remoteControl') }}',
+                            'data': {
+                                'lock_id': lock_id,
+                                'password': $('input[name=open-lock-password]').val()
+                            },
+                            'success': function (result) {
+                                stalert.alertSuccessToast(result.message);
+                                $('#open-lock-caveat').modal('hide');
+                                setTimeout(function () {
+                                    location.replace(location.href); //刷新网页
+                                }, 1200);
+                            }
+                        })
+                    })
+                })
+            });
+
+            $(function () {
+                $('.lock-info').click(function (e) {
+                    /**
+                     * 查看锁信息并修改
+                     */
+                    e.preventDefault();
+                    var self = $(this);
+                    var lockID = self.attr('data-id');
+                    zlajax.post({
+                        'url': '{{ url_for('cms.lockInfo') }}',
+                        'data': {
+                            'id': lockID
+                        },
+                        'success': function (result) {
+                            if (result.code = 200) {
+                                var data = result.data;
+                                var lockIdInput = $('input[name=lock-info-id]');
+                                var lockRemarkInput = $('input[name=lock-info-remark]');
+                                var lockTimeInput = $('input[name=lock-info-time]');
+                                lockIdInput.val(data.lock_id);
+                                lockRemarkInput.val(data.remark);
+                                lockTimeInput.val(data.time);
+                                $('#modify-lock-info').attr('data-id', data.id);
+                            } else {
+                                console.error('异常，请联系开发者')
+                            }
+                        }
+                    });
+                    $('#lock-info-modal').modal('toggle');
+                });
+            });
+
+            $(function () {
+                $('#modify-lock-info').click(function (e) {
+                    /**
+                     *修改门锁信息
+                     */
+                    e.preventDefault();
+                    var ID = $(this).attr('data-id');
+                    var tmpMsg = $('input[name=lock-info-remark]').val();
+                    zlajax.post({
+                        'url': '{{ url_for('cms.modifyLockInfo') }}',
+                        'data': {
+                            'id': ID,
+                            'tmpMsg': tmpMsg
+                        },
+                        'success': function (result) {
+                            if (result.code = 200) {
+                                stalert.alertSuccessToast(result.message);
+                                setTimeout(function () {
+                                    location.replace(location.href); //刷新网页
+                                }, 1200);
+                            } else {
+                                console.error('异常，请联系开发者')
+                            }
+                        }
+                    });
+                });
+            });
+
+            $(function () {
+                $('.delete-lock').click(function (e) {
+                    /**
+                     * 删除门锁
+                     */
+                    e.preventDefault();
+                    var lockID = $(this).attr('data-id');
+                    swal({
+                        title: "确定要删除该门锁吗？",
+                        type: "warning",
+                        showCancelButton: true,
+                        closeOnConfirm: false,
+                        cancelButtonText: "取消",
+                        confirmButtonText: "删除",
+                        confirmButtonColor: "#ec6c62"
+                    }, function () {
+                        zlajax.post({
+                            'url': '{{ url_for('cms.deleteLock') }}',
+                            'data': {
+                                'id': lockID
+                            },
+                            'success': function (result) {
+                                if (result.code = 200) {
+                                    stalert.alertSuccessToast(result.message);
+                                    setTimeout(function () {
+                                        location.replace(location.href); //刷新网页
+                                    }, 1800);
+                                } else {
+                                    console.error('异常，请联系开发者')
+                                }
+                            }
+                        });
+                    });
+                });
+            });
+
+            $(function () {
+                /**
+                 * 添加门锁信息
+                 */
+                $('#add-lock-btn').click(function (event) {
+
+                    $('#add-lock-modal').modal('show');
+
+                    $('#save-lock-btn').click(function (e) {
+                        var add_lock_id = $('input[name=lock-id]').val();
+                        var add_lock_remark = $('input[name=lock-remark]').val();
+                        zlajax.post({
+                            'url': '{{ url_for('cms.add_lock') }}',
+                            'data': {
+                                'lock_id': add_lock_id,
+                                'lock_remark': add_lock_remark
+                            },
+                            'success': function (result) {
+                                if (result.code == 200) {
+                                    stalert.alertSuccessToast(result.message);
+                                    $('#add-lock-modal').modal('hide');
+                                    setTimeout(function () {
+                                        location.replace(location.href); //刷新网页
+                                    }, 1200);
+                                } else {
+                                    stalert.alertSuccessToast(result.message);
+                                }
+                            }
+                        })
+                    })
+                })
+            })
+        </script>
+    </table>
+
+    {#添加门锁模态框#}
+    <div class="modal fade" id="add-lock-modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="exampleModalLabel">门锁信息修改</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="recipient-name" class="control-label">锁ID:</label>
+                        <input type="text" name="lock-id" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="recipient-name" class="control-label">所在门室:</label>
+                        <input type="text" name="lock-remark" class="form-control">
+                    </div>
+                    <p class="text-danger">提示：锁ID是门锁的唯一标示，设置后一般不能修改。</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                    <button id="save-lock-btn" type="button" class="btn btn-primary">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {#门锁信息模态框#}
+    <div class="modal fade" id="lock-info-modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="exampleModalLabel">门锁信息修改</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="recipient-name" class="control-label">锁ID:</label>
+                        <input disabled type="text" name="lock-info-id" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="recipient-name" class="control-label">所在门室:</label>
+                        <input type="text" name="lock-info-remark" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="message-text" class="control-label">创建日期:</label>
+                        <input disabled type="text" name="lock-info-time" class="form-control">
+                    </div>
+                    <p class="text-danger">提示：锁ID和门锁创建时间不可直接修改..</p>
+                </div>
+                <div class="modal-footer">
+                    <button id="modify-lock-info" type="button" class="btn btn-primary">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {#远程开锁#}
+    <div class="modal fade" id="open-lock-caveat" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title text-danger" id="exampleModalLabel">安全提示</h4>
+                </div>
+                <div class="modal-body">
+                    <h5>出于安全考虑，请您务必确保此刻<span class="text-danger" id="lock-remark"></span>门锁旁有人；然后验证密码远程开锁。</h5>
+                    <div class="form-group">
+                        <input name="open-lock-password" type="password" class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                    <button id="open-lock-btn" type="button" class="btn btn-primary">确定开锁</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {#最大模态框#}
+    <div id="show-lock-user" class="modal fade bs-example-modal-lg" tabindex="-1" role="dialog"
+         aria-labelledby="myLargeModalLabel">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title text-danger" id="exampleModalLabel">门锁用户查看</h4>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                        <tr>
+                            <th>姓名</th>
+                            <th>学号</th>
+                            <th>班级</th>
+                            <th>权限</th>
+                        </tr>
+                        </thead>
+                        <tbody id="lock_per_tbody">
+                        </tbody>
+                    </table>
+                    <p class="text-danger">此处只做显示，具体可以到<a href="{{ url_for('cms.userManage') }}">用户管理页面</a>进行权限操作。</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        $(function () {
+            $('.look-per').click(function (event) {
+                event.preventDefault();
+                var lock_id = $(this).attr('data-id');
+                $('#show-lock-user').modal('show');
+                zlajax.post({
+                    'url': '{{ url_for('cms.check_lock_per') }}',
+                    'data': {
+                        'lock_id': lock_id
+                    },
+                    'success': function (result) {
+                        var data = result.data;
+                        var lockPerTbody = $('#lock_per_tbody');
+                        lockPerTbody.html('');
+                        for (var i = 0; i < data.length; i++) {
+                            lockPerTbody.append(
+                                '    <tr>\n' +
+                                '      <th scope="row">' + data[i].name + '</th>\n' +
+                                '      <td>' + data[i].number + '</td>\n' +
+                                '      <td>' + data[i].class + '</td>\n' +
+                                '      <td>' + data[i].permission + '</td>\n' +
+                                '    </tr>'
+                            );
+                        }
+                    }
+                })
+            });
+        })
+    </script>
+{% endblock %}

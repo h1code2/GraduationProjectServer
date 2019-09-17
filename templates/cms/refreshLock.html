@@ -1,0 +1,16 @@
+{% extends "cms/base.html" %}
+
+{% from "common/_macros.html" import static %}
+{% block title %}
+    初始化全部门锁
+{% endblock %}
+{% block page_title %}
+    测试功能-初始化门锁
+{% endblock %}
+{% block page_inner %}
+    <script>
+        $(function () {
+            stalert.alertSuccessToast('门锁状态被初始化')
+        })
+    </script>
+{% endblock %}

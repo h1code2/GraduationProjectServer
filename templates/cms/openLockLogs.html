@@ -1,0 +1,241 @@
+{% extends "cms/base.html" %}
+
+{% from "common/_macros.html" import static %}
+{% from "common/_pagination.html" import show_pagination %}
+{% block title %}
+    开锁记录
+{% endblock %}
+{% block head %}
+    <script src="https://cdn.bootcss.com/vue/2.5.17/vue.min.js"></script>
+    <style>
+        .handle-group {
+            padding: 5px 5px 5px 0;
+        }
+
+        tr th {
+            text-align: center;
+        }
+
+        tr td {
+            text-align: center;
+        }
+
+        .btn-danger {
+            margin-left: 50px;
+        }
+
+        .filter-group {
+            padding: 1px 2px;
+        }
+    </style>
+{% endblock %}
+
+{% block page_title %}
+    开锁记录页面
+{% endblock %}
+
+{% block page_inner %}
+    {#    batch 批量#}
+    <div class="handle-group">
+        <label>
+            <input id="checkall" name="AllSelect" type="checkbox" value="all">
+            全选
+        </label>
+        <button id="delete-select-items" class="btn btn-danger btn-xs" type="button">删除选中</button>
+        {% if g.cms_user.permission >=15 %}
+            <button style="margin-left: 20px;" id="export-data-btn" class="btn btn-default btn-xs pull-right"
+                    type="button">
+                导出记录
+            </button>
+        {% endif %}
+        <script>
+            $(function () {
+                $('#export-data-btn').click(function (e) {
+                    e.preventDefault();
+                    $('#export-modal').modal('show');
+                });
+            })
+        </script>
+        <!-- Single button -->
+        <div class="btn-group pull-right">
+            <button type="button" class="btn btn-default dropdown-toggle btn-xs" data-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="true">过滤方式<span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu">
+                <li><a href="{{ url_for('cms.openLockLogs',reason='签到') }}">过滤签到</a></li>
+                <li><a href="{{ url_for('cms.openLockLogs',reason='上课') }}">过滤上课</a></li>
+                <li><a href="{{ url_for('cms.openLockLogs',reason='实验') }}">过滤实验</a></li>
+                <li><a href="{{ url_for('cms.openLockLogs',reason='其他') }}">过滤其他</a></li>
+                <li role="separator" class="divider"></li>
+                <li><a href="{{ url_for('cms.openLockLogs') }}">查看全部</a></li>
+            </ul>
+        </div>
+    </div>
+    <table class="table table-bordered table-hover">
+        <thead>
+        <tr>
+            <th></th>
+            <th>姓名</th>
+            <th>班级</th>
+            <th>权限</th>
+            <th>备注</th>
+            <th>门室</th>
+            {% if g.cms_user.permission >=3 %}
+                <th>锁ID</th>
+            {% endif %}
+            <th>时间</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for log in logs %}
+            <tr>
+                {% if g.cms_user.permission>=3 %}
+                    <td><input onclick="selectPa();" type="checkbox" class="select-item" value="{{ log.id }}"></td>
+                {% endif %}
+                {#此处可能有坑-------------#}
+                <td>{{ log.username }}</td>
+                <td>{{ log.user.classU }}</td>
+                {% if log.user.permission==1 %}
+                    <td>普通用户</td>
+                {% elif log.user.permission==3 %}
+                    <td>管理员</td>
+                {% elif log.user.permission==15 %}
+                    <td>超级管理员</td>
+                {% elif log.user.permission==255 %}
+                    <td>开发者</td>
+                {% endif %}
+                <td>{{ log.reason }}</td>
+                <td>{{ log.remark }}</td>
+                {% if g.cms_user.permission >=3 %}
+                    <td>{{ log.lock_id }}</td>
+                {% endif %}
+                <td>{{ log.time }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {#记录下载模态框#}
+    <div id="download-export-data" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">记录文件已经生成准备下载:</h4>
+                </div>
+                <div class="modal-body">
+                    <p>文件名称:<span class="text-info">{[ fileInfo.name ]}</span></p>
+                    <p>文件地址:<span class="text-info">{[ fileInfo.url ]}</span></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                    <button v-on:click="downloadFilEvent" type="button" class="btn btn-primary">直接下载</button>
+                </div>
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+
+    {#记录导出模态框#}
+    <div id="export-modal" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            {#  小模态框类  modal-sm#}
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title text-danger">请选择需要导出的记录: </h4>
+                </div>
+                <div class="modal-body">
+                    <select v-model="selectValue" class="form-control">
+                        <option value="1">签到记录</option>
+                        <option value="2">上课记录</option>
+                        <option value="3">实验记录</option>
+                        <option value="4">其他记录</option>
+                        <option value="5">全部记录</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                    <button v-on:click="exportDataEvent" type="button" class="btn btn-primary">导出</button>
+                </div>
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+
+    {{ show_pagination(pagination,'cms.openLockLogs',current_reason) }}
+    <script src="{{ static('cms/js/vuelog.js') }}"></script>
+    <script>
+        $(function () {
+            //父选框的全选和取消全选
+            var ischeck = false;//全选标记
+            $("#checkall").click(function () {
+                if (ischeck) {
+                    $(".select-item").attr("checked", !ischeck);
+                    ischeck = false;
+                } else {
+                    $(".select-item").attr("checked", !ischeck);
+                    ischeck = true;
+                }
+            });
+
+            //子选框全部选中,父选框选中;子选框不全选中,父选框不选中
+            var isallcheck = true;//所有的子选框选中的标记
+            function selectPa() {
+                $(".select-item").each(function (i, o) {
+                    if (!$(o).prop("checked")) {
+                        isallcheck = false;
+                        return;
+                    }
+                });
+                if (isallcheck) {
+                    ischeck = true;
+                    $("#checkall").prop("checked", isallcheck);
+                } else {
+                    ischeck = false;
+                    $("#checkall").prop("checked", isallcheck);
+                }
+                isallcheck = true;//恢复所有的子选框选中的默认标记
+            }
+        });
+
+        $(function () {
+            $('#delete-select-items').click(function (event) {
+                event.preventDefault();
+                var ids = new Array();
+                $.each($("td input[type='checkbox']:checked"), function () {
+                    if (this.checked) {
+                        ids.push($(this).val())
+                    }
+                });
+                swal({
+                    title: "您确定要删除这" + ids.length.toString() + "记录吗？",
+                    type: "warning",
+                    showCancelButton: true,
+                    closeOnConfirm: false,
+                    cancelButtonText: "取消",
+                    confirmButtonText: "删除",
+                    confirmButtonColor: "#ec6c62"
+                }, function () {
+                    zlajax.post({
+                        'url': '{{ url_for('cms.openLockLogs') }}',
+                        'data': {
+                            'ids': ids
+                        },
+                        'success': function (result) {
+                            console.log()
+                            if (result.code == 200) {
+                                stalert.alertSuccessToast(result.message);
+                                setTimeout(function () {
+                                    location.replace(location.href); //刷新网页
+                                }, 1800);
+                            } else {
+                                console.log('异常,请联系管理员')
+                            }
+                        }
+                    })
+                });
+            });
+        });
+    </script>
+{% endblock %}

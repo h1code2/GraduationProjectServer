@@ -1,0 +1,46 @@
+{% extends "cms/base.html" %}
+
+{% block title -%}
+    个人信息
+{%- endblock %}
+{% block page_title -%}
+    {{ self.title() }}
+{%- endblock %}
+
+{% block page_inner %}
+    {% set user = g.cms_user %}
+    <table class="table table-bordered">
+        <tbody>
+        <tr class="row">
+            <td class="col-md-2">用户姓名：</td>
+            <td class="col-md-10">{{ user.nameU }}</td>
+        </tr>
+        <tr class="row">
+            <td class="col-md-2">当前权限：</td>
+            {% if user.permission==1 %}
+                <td class="col-md-10">普通用户</td>
+            {% elif user.permission==3 %}
+
+                <td class="col-md-10">管理员</td>
+            {% elif user.permission==15 %}
+
+                <td class="col-md-10">超级管理员</td>
+            {% elif user.permission==255 %}
+
+                <td class="col-md-10">开发者</td>
+            {% else %}
+                <td class="col-md-10">游客</td>
+            {% endif %}
+        </tr>
+        <tr class="row">
+            <td class="col-md-2">注册时间：</td>
+            <td class="col-md-10">{{ user.time }}</td>
+        </tr>
+        </tbody>
+    </table>
+    <p class="text-danger">个人信息以及登录信息可以通过手机端微信小程序进行修改
+        {% if user.permission<15 %}
+            ；关于更高授权，请联系超级管理员
+        {% endif %}
+    </p>
+{% endblock %}

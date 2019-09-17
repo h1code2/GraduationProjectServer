@@ -1,0 +1,60 @@
+{% macro show_pagination(pagination,root_url,current_reason=None) -%}
+
+    {% if pagination.total  > pagination.per_page %}
+        <div class="text-center">
+            <!-- 创建页码-->
+            <ul class="pagination">
+
+                {#上一页#}
+                {% if pagination.has_prev %}
+                    <li><a href="{{ url_for(root_url,page=pagination.prev_num,reason=current_reason) }}">&laquo;</a>
+                    </li>
+                {% endif %}
+
+                {#页码#}
+                {% set page_now = pagination.page %}
+                {% set page_count = pagination.pages %}
+                {% if pagination.pages <= 5 %}
+                    {% for p in pagination.iter_pages() %}
+                        {% if p == pagination.page %}
+                            <li><a style="background-color: #d9534f;opacity: 1;color: black"
+                                   href="{{ url_for(root_url,page=p,reason=current_reason) }}">{{ p }}</a></li>
+                        {% else %}
+                            <li><a href="{{ url_for(root_url,page=p,reason=current_reason) }}">{{ p }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+
+                {% else %}
+                    {% if page_now-2 >0 %}
+                        <li><a href="{{ url_for(root_url,page=page_now-2,reason=current_reason) }}">{{ page_now-2 }}</a>
+                        </li>
+                    {% endif %}
+                    {% if  page_now-1 >0 %}
+                        <li><a href="{{ url_for(root_url,page=page_now-1,reason=current_reason) }}">{{ page_now-1 }}</a>
+                        </li>
+                    {% endif %}
+                    <li><a style="background-color: #d9534f; opacity: 1;color: black"
+                           href="{{ url_for(root_url,page=page_now,reason=current_reason) }}">{{ page_now }}</a></li>
+                    {% if (page_count-page_now) >1 %}
+                        <li>
+                            <a href="{{ url_for(root_url,page=page_now + 1,reason=current_reason) }}">{{ page_now + 1 }}</a>
+                        </li>
+                    {% endif %}
+                    {% if (page_count - page_now) >2 %}
+                        <li>
+                            <a href="{{ url_for(root_url,page=page_now + 1,reason=current_reason) }}">{{ page_now + 2 }}</a>
+                        </li>
+                    {% endif %}
+                {% endif %}
+
+                {#下一页#}
+                {% if pagination.has_next %}
+                    <li><a href="{{ url_for(root_url,page=pagination.next_num,reason=current_reason) }}">&raquo;</a>
+                    </li>
+                {% endif %}
+
+                <li><span style="color: black">页数 ( {{ page_now }}/{{ page_count }} )</span></li>
+            </ul>
+        </div>
+    {% endif %}
+{%- endmacro %}

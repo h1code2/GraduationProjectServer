@@ -1,0 +1,317 @@
+{% extends "cms/base.html" %}
+
+{% from "common/_macros.html" import static %}
+{% from "common/_pagination.html" import show_pagination %}
+
+{% block title %}
+    用户管理
+{% endblock %}
+{% block head %}
+    <style>
+        .handle-user {
+            margin-left: 5px;
+            margin-right: 5px;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+        }
+
+        tr th {
+            text-align: center;
+        }
+
+        tr td {
+            text-align: center;
+        }
+    </style>
+{% endblock %}
+{% block page_title %}
+    用户管理
+{% endblock %}
+{% block page_inner %}
+    <table class="table table-bordered table-hover">
+        <thead>
+        <tr class="row">
+            <th class="col-md-1">姓名</th>
+            <th class="col-md-2">班级</th>
+            <th class="col-md-2">学号</th>
+            <th class="col-md-2">权限</th>
+            <th class="col-md-2">创建日期</th>
+            <th class="col-md-3">操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for user in users %}
+            <tr class="row">
+                <td class="col-md-1">{{ user.nameU }}</td>
+                <td class="col-md-2">{{ user.classU }}</td>
+                <td class="col-md-2">{{ user.studentID }}</td>
+                {% if user.permission==1 %}
+                    <td class="col-md-2">普通用户</td>
+                {% elif user.permission==3 %}
+                    <td class="col-md-2">管理员</td>
+                {% elif user.permission==15 %}
+                    <td class="col-md-2">超级管理员</td>
+                {% endif %}
+                <td class="col-md-2">{{ user.time }}</td>
+                <td class="col-md-3">
+                    <div class="handle-user">
+                        {% if currentUser.permission>=15 %}
+                            {% if user.permission>=3 %}
+                                {% if user.permission==15 %}
+                                    <button disabled type="button"
+                                            class="btn btn-danger btn-xs">取消管理员
+                                    </button>
+                                {% else %}
+                                    <button data-id="{{ user.id }}" type="button"
+                                            class="cancel-admin btn btn-danger btn-xs">取消管理员
+                                    </button>
+                                {% endif %}
+                            {% else %}
+                                <button data-id="{{ user.id }}" type="button"
+                                        class="set-admin btn btn-danger btn-xs">设置管理员
+                                </button>
+                            {% endif %}
+                        {% endif %}
+                        <button data-id="{{ user.id }}" type="button" class="delete-user btn btn-danger btn-xs">移除该用户
+                        </button>
+                        <button data-id="{{ user.id }}" data-toggle="modal" type="button"
+                                class="btn btn-danger btn-xs handler-permission">查看授权
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {{ show_pagination(pagination,'cms.userManage') }}
+
+    <script>
+        $(function () {
+            $('.set-admin').click(function (e) {
+                e.preventDefault();
+                var self = $(this);
+                var user_id = self.attr('data-id');
+                adminHandle(1, user_id);
+            });
+
+        });
+
+        $(function () {
+            $('.cancel-admin').click(function (e) {
+                e.preventDefault();
+                var self = $(this);
+                var user_id = self.attr('data-id');
+                adminHandle(2, user_id);
+            });
+        });
+
+        $(function () {
+            $('.delete-user').click(function (e) {
+                e.preventDefault();
+                var self = $(this);
+                var user_id = self.attr('data-id');
+                swal({
+                    title: "确定要移除该用户吗？",
+                    text: '移除该用户后，该用户的开锁记录也将会全部移除。',
+                    type: "warning",
+                    showCancelButton: true,
+                    closeOnConfirm: false,
+                    cancelButtonText: "取消",
+                    confirmButtonText: "移除",
+                    confirmButtonColor: "#ec6c62"
+                }, function () {
+                    zlajax.post({
+                        'url': '{{ url_for('cms.deleteUser') }}',
+                        'data': {
+                            'user_id': user_id
+                        },
+                        'success': function (result) {
+                            if (result.code == 200) {
+                                stalert.alertSuccessToast(result.message);
+                                setTimeout(function () {
+                                    location.replace(location.href); //刷新网页
+                                }, 1800);
+                            } else {
+                                console.error('异常，请联系开发者');
+                            }
+                        }
+                    });
+                });
+            });
+        });
+
+        $(function () {
+            $('.handler-permission').click(function (e) {
+                e.preventDefault();
+                var self = $(this);
+                var user_id = self.attr('data-id');
+                zlajax.post({
+                    'url': '{{ url_for('cms.userAuthorizationMange') }}',
+                    'data': {
+                        'user_id': user_id
+                    },
+                    'success': function (result) {
+                        if (result.code == 200) {
+                            var data = result.data;
+                            var currentUserPermission = data.currentUser.permission;
+                            switch (currentUserPermission) {
+                                case 1:
+                                    $('#current-user-permission-text').html(data.currentUser.name + '的权限：普通用户');
+                                    break;
+                                case 3:
+                                    $('#current-user-permission-text').html(data.currentUser.name + '的权限：管理员');
+                                    break;
+                                case 15:
+                                    $('#current-user-permission-text').html(data.currentUser.name + '的权限：超级管理员');
+                                    break;
+                            }
+                            var lockInfos = data.lockResult;
+                            var html_ = '';
+                            var leftMsg = '';
+                            var rightMsg = '';
+                            for (var i = 0; i < lockInfos.length; i++) {
+                                if (lockInfos[i].flag == true) {
+                                    var leftMsg = ' disabled ';
+                                    var rightMsg = ' ';
+                                } else {
+                                    var leftMsg = ' ';
+                                    var rightMsg = ' disabled ';
+                                }
+                                html_ += ' <tr class="row">\n' +
+                                    '<td class="col-md-2">' + lockInfos[i].lock_id + '</td>\n' +
+                                    '<td class="col-md-3">' + lockInfos[i].remark + '</td>\n' +
+                                    '<td class="col-md-4">' + lockInfos[i].time + '</td>\n' +
+                                    '<td class="col-md-3">\n' +
+                                    '    <div class="handle-lock row">\n' +
+                                    '        <button ' + leftMsg +
+                                    'onclick="userAuthorization(1,' + data.currentUser.id + ',\'' + lockInfos[i].lock_id + '\');" type="button" class="col-md-offset-1 col-md-4 btn btn-danger btn-xs auth-permission">授权该锁</button>\n' +
+                                    '        <button ' + rightMsg +
+                                    'onclick="userAuthorization(2,' + data.currentUser.id + ',\'' + lockInfos[i].lock_id + '\');" type="button" class="col-md-offset-2 col-md-4 btn btn-danger btn-xs cancel-auth-permission">取消授权</button>\n' +
+                                    '    </div>\n' +
+                                    '</td>\n' +
+                                    '</tr>'
+                            }
+                            $('#lock-list-group').html(html_);
+                            $('#show-text').html('提示：此处门锁设备是当前登录用户可以授权给' + data.currentUser.name + '的授权范围');
+                        } else {
+                            console.error('数据异常联系开发者')
+                        }
+                    }
+                });
+                $('#userModel').modal('toggle');
+            });
+        });
+
+        function userAuthorization(flag, id, lockID) {
+            /**
+             * 用户授权处理
+             */
+            if (flag == 1) {
+                authorizationHandle(id, lockID, '{{ url_for('cms.addUserLockAuth') }}')
+            }
+            if (flag == 2) {
+                authorizationHandle(id, lockID, '{{ url_for('cms.removeUserLockAuth') }}')
+            }
+
+        }
+
+        function authorizationHandle(id, lockID, url) {
+            /**
+             * 授权处理
+             */
+            zlajax.post({
+                'url': url,
+                'data': {
+                    'user_id': id,
+                    'lock_id': lockID
+                },
+                'success': function (result) {
+                    if (result.code == 200) {
+                        stalert.alertSuccessToast(result.message);
+                        $('#userModel').modal('hide');
+                    } else {
+                        console.log('异常，请联系开发者')
+                    }
+                }
+            })
+        }
+
+        function adminHandle(flag, userID) {
+            var url = '';
+            var text = '';
+            switch (flag) {
+                case 1:
+                    url = '{{ url_for('cms.setAdminPer') }}';
+                    text = '确定将该用户设置为管理员吗?';
+                    break;
+                case 2:
+                    url = '{{ url_for('cms.cancelAdminPer') }}';
+                    text = '确定取消该用户管理员身份吗?';
+                    break;
+            }
+            swal({
+                title: text,
+                type: "warning",
+                showCancelButton: true,
+                closeOnConfirm: false,
+                cancelButtonText: "取消",
+                confirmButtonText: "确定",
+                confirmButtonColor: "#ec6c62"
+            }, function () {
+                zlajax.post({
+                    'url': url,
+                    'data': {
+                        'user_id': userID
+                    },
+                    'success': function (result) {
+                        if (result.code == 200) {
+                            stalert.alertSuccessToast(result.message);
+                            setTimeout(function () {
+                                location.replace(location.href); //刷新网页
+                            }, 1800);
+                        } else {
+                            console.error('异常，请联系开发者');
+                        }
+                    }
+                });
+            });
+        }
+    </script>
+    <!-- Modal用户权限管理 -->
+    <div class="modal fade" id="userModel" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title text-danger" id="myModalLabel">用户权限管理</h4>
+                </div>
+                <div class="modal-body">
+                    <p id="current-user-permission-text"></p>
+                    <div class="lock-list-group">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                            <tr class="row">
+                                <th class="col-md-2">锁ID</th>
+                                <th class="col-md-3">门室</th>
+                                <th class="col-md-4">创建日期</th>
+                                <th class="col-md-3">操作</th>
+                            </tr>
+                            </thead>
+                            <tbody id="lock-list-group">
+
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <p id="show-text text-danger"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

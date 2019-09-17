@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<input type="checkbox" name="" id="checkall">全选/取消
+<div>
+    <ul class="ul1">
+        <li><input type="checkbox" name="" class="check1" onclick="selectPa();">子选框1</li>
+        <li><input type="checkbox" name="" class="check1" onclick="selectPa();">子选框2</li>
+        <li><input type="checkbox" name="" class="check1" onclick="selectPa();">子选框3</li>
+    </ul>
+</div>
+<script type="text/javascript">
+    $(function () {
+        //父选框的全选和取消全选
+        var ischeck = false;//全选标记
+        $("#checkall").click(function () {
+            if (ischeck) {
+                $(".check1").attr("checked", !ischeck);
+                ischeck = false;
+            } else {
+                $(".check1").attr("checked", !ischeck);
+                ischeck = true;
+            }
+        });
+
+        //子选框全部选中,父选框选中;子选框不全选中,父选框不选中
+        var isallcheck = true;//所有的子选框选中的标记
+        function selectPa() {
+            $(".check1").each(function (i, o) {
+                if (!$(o).prop("checked")) {
+                    isallcheck = false;
+                    return;
+                }
+            });
+            if (isallcheck) {
+                ischeck = true;
+                $("#checkall").prop("checked", isallcheck);
+            } else {
+                ischeck = false;
+                $("#checkall").prop("checked", isallcheck);
+            }
+            isallcheck = true;//恢复所有的子选框选中的默认标记
+        };
+    })
+</script>
+</body>
+</html>

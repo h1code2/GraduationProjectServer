@@ -1,0 +1,101 @@
+{% from "common/_macros.html" import static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="shortcut icon" href="{{ static('images/favicon.ico') }}" type="image/x-icon"/>
+    <link rel="stylesheet" href="{{ static('common/css/bootstrap.css') }}">
+    <link rel="stylesheet" href="{{ static('cms/css/base.css') }}">
+    <link rel="stylesheet" href="{{ static('cms/css/signin.css') }}">
+    <link rel="stylesheet" href="{{ static('common/css/sweetalert.css') }}">
+    <script src="{{ static('common/js/jquery.js') }}"></script>
+    <script src="{{ static('common/js/sweetalert.min.js') }}"></script>
+    <script src="{{ static('common/js/stalert.js') }}"></script>
+    <script src="{{ static('common/js/bootstrap.min.js') }}"></script>
+    <script src="{{ static('cms/js/base.js') }}"></script>
+    <script src="{{ static('common/js/zlajax.js') }}"></script>
+    {% block head %}{% endblock %}
+</head>
+<body>
+<nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar"
+                    aria-expanded="false" aria-controls="navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="{{ url_for('cms.default') }}">智能门锁管理系统</a>
+            {#            <a class="navbar-brand" href="{{ url_for('cms.default') }}"><img style="height: 36px;margin-top: -10px;" src="{{ static('images/logo.png') }}" alt=""></a>#}
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav navbar-right">
+                <li><a style="padding: 5px 0;" href="{{ url_for('cms.userInfo') }}">
+                    <img style="height: 36px;margin-top: 2px;-webkit-border-radius: 50%;-moz-border-radius: 50%;border-radius: 50%;"
+                         src="{{ g.cms_user.avatarUrl }}" alt="">
+                </a>
+                </li>
+                <li><a href="{{ url_for('cms.userInfo') }}">{{ g.cms_user.nameU }}</a></li>
+                <li><a href="{{ url_for('cms.logout') }}">注销</a></li>
+            </ul>
+            <form class="navbar-form navbar-right">
+                <input type="text" class="form-control" placeholder="查找...">
+            </form>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-3 col-md-2 sidebar">
+            <ul class="nav-sidebar">
+                <li class="unfold"><a href="{{ url_for('cms.default') }}">首页</a></li>
+                {% set cms_user =g.cms_user %}
+                <li class="nav-group user-info-manage">
+                    <a href="{{ url_for('cms.userInfo') }}">个人中心</a>
+                </li>
+                <li class="open-lock-manage">
+                    <a href="{{ url_for('cms.openLockLogs') }}">开锁记录</a>
+                </li>
+                {#用户管理#}
+                {% if cms_user.permission>=3 %}
+                    <li class="nav-group user-manage">
+                        <a href="{{ url_for('cms.userManage') }}">用户管理</a>
+                    </li>
+                {% endif %}
+                {#门锁管理#}
+                {% if cms_user.permission>=15 %}
+                    <li class="nav-group lock-manage">
+                        <a href="{{ url_for('cms.lockManage') }}">门锁管理</a>
+                    </li>
+                {% endif %}
+                {#                {% if cms_user.has_permissions(CMSPermission.CMSUSER) %}#}
+                {#                    <li class="nav-group cmsuser-manage"><a href="{{ url_for('cms.cusers') }}">CMS用户管理</a></li>#}
+                {#                {% endif %}#}
+                {#                {% if cms_user.is_developer() %}#}
+                {#                    <li class="cmsrole-manage"><a href="{{ url_for('cms.croles') }}">CMS组管理</a></li>#}
+                {#                {% endif %}#}
+
+                {#测试功能-关所有的门#}
+                {% if cms_user.permission==255 %}
+                    <li class="refresh-lock-manage">
+                        <a href="{{ url_for('cms.refreshLock') }}">刷新门锁-测试</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+            <h2>{% block page_title %}{% endblock %}</h2>
+            <div class="main_content">
+                {% block page_inner %}{% endblock %}
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

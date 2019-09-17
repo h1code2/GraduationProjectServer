@@ -1,0 +1,113 @@
+{% from "common/_macros.html" import static %}
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <title>智能门锁登录系统</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" href="{{ static('images/favicon.ico') }}" type="image/x-icon"/>
+    <!-- CSS -->
+    <link rel='stylesheet' href='http://fonts.googleapis.com/css?family=PT+Sans:400,700'>
+    <link rel='stylesheet' href='http://fonts.googleapis.com/css?family=Oleo+Script:400,700'>
+    <link rel="stylesheet" href="{{ static('cms/css/bootstrap.css') }}">
+    <link href="{{ static('common/css/sweetalert.css') }}" rel='stylesheet' type='text/css'/>
+    <link rel="stylesheet" href="{{ static('cms/css/login.css') }}">
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+            <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+
+</head>
+
+<body>
+
+<div class="header">
+    <div class="container">
+        <div class="row">
+            <div class="logo span4">
+                <h1><a href="">Smart door lock <span class="red">.</span></a></h1>
+            </div>
+            <div class="links span8">
+                <a target="_blank" class="home"
+                   href="https://map.baidu.com/?newmap=1&shareurl=1&l=17.472736132647718&tn=B_NORMAL_MAP&hb=B_SATELLITE_STREET&c=12684463,4178005&s=s%26da_src%3DsearchBox.button%26wd%3D%E6%B2%B3%E5%8D%97%E7%A7%91%E6%8A%80%E5%AD%A6%E9%99%A2%26c%3D269%26src%3D0%26wd2%3D%E6%96%B0%E4%B9%A1%E5%B8%82%E7%BA%A2%E6%97%97%E5%8C%BA%26pn%3D0%26sug%3D1%26l%3D12%26from%3Dwebmap%26biz_forward%3D%7B%22scaler%22%3A1%2C%22styles%22%3A%22pl%22%7D%26sug_forward%3D026dbe577861583d3717dc56%26auth%3D0DAT23SeU%403ww0PeXA2bKLA45RgWy30zuxHEBHNBxHxt1qo6DF%3D%3DC1GgvPUDZYOYIZuVt1cv3uVtGccZcuVtPWv3GuxtVwi04960vyACFIMOSU7ucEWe1GD8zv7u%40ZPuVteuVtcvY1SGpuxxtoqFmqE25435732351swVVH362Fkk0Hf%26device_ratio%3D1"
+                   rel="tooltip" data-placement="bottom" data-original-title="Home"></a>
+                <a class="blog" href="" rel="tooltip" data-placement="bottom" data-original-title="联系"></a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="copyrights">Collect from <a href="https://lock.huangtongx.cn/" title="智能门锁">智能门锁</a></div>
+
+<div class="login-container container">
+    <div class="row">
+        <div class="iphone span5">
+            <img src="{{ static('images/iphone.png') }}" alt="">
+        </div>
+        <div class="login span6">
+            <div class="form-div">
+                <h2>管理系统 <span class="red"><strong>登录</strong></span></h2>
+                <label>用户名</label>
+                <input type="text" name="username" placeholder="请输入您的用户名">
+                <label>密码</label>
+                <input type="password" name="password" placeholder="请输入您的密码">
+                <button id="login-btn">登录</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Javascript -->
+<script src="{{ static('common/js/bootstrap.min.js') }}"></script>
+{#<script src="{{ static('cms/js/jquery-1.8.2.min.js') }}"></script>#}
+<script src="{{ static('common/js/jquery.js') }}"></script>
+<script src="{{ static('common/js/jquery.backstretch.min.js') }}"></script>
+<script src="{{ static('common/js/zlajax.js') }}"></script>
+<script src="{{ static('common/js/stalert.js') }}"></script>
+<script src="{{ static('common/js/sweetalert.min.js') }}"></script>
+<script src="{{ static('common/js/scripts.js') }}"></script>
+
+<script>
+
+    $(function () {
+        var nameInput = $('input[name=username]');
+        var passwdInput = $('input[name=password]');
+
+        $('#login-btn').click(function (e) {
+            e.preventDefault();
+            console.log(e)
+            var username = nameInput.val();
+            var password = passwdInput.val();
+
+            zlajax.post({
+                'url': '{{ url_for('cms.login') }}',
+                'data': {
+                    'username': username,
+                    'password': password
+                },
+                'success': function (result) {
+                    if (result['code'] == 200) {
+                        window.location = '{{ url_for('cms.default') }}'
+                    } else {
+                        stalert.alertInfoToast(result.message);
+                        console.log(result);
+                    }
+                }
+            })
+        });
+    })
+</script>
+
+</body>
+
+</html>
+
+
+

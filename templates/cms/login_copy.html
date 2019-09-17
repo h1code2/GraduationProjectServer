@@ -1,0 +1,91 @@
+{% from "common/_macros.html" import static %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <title>登录智能门锁管理系统</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script type="application/x-javascript"> addEventListener("load", function () {
+        setTimeout(hideURLbar, 0);
+    }, false);
+
+    function hideURLbar() {
+        window.scrollTo(0, 1);
+    } </script>
+    <link href="{{ static('cms/css/login.css') }}" rel='stylesheet' type='text/css'/>
+    <link href="{{ static('common/css/bootstrap.css') }}" rel='stylesheet' type='text/css'/>
+    <link href="{{ static('common/css/sweetalert.css') }}" rel='stylesheet' type='text/css'/>
+    <script src="{{ static('common/js/jquery.js') }}"></script>
+    <script src="{{ static('common/js/zlajax.js') }}"></script>
+    <script src="{{ static('common/js/stalert.js') }}"></script>
+    <script src="{{ static('common/js/sweetalert.min.js') }}"></script>
+</head>
+<body>
+<script>
+    $(document).ready(function (c) {
+        $('.close').on('click', function (c) {
+            $('.login-form').fadeOut('slow', function (c) {
+                $('.login-form').remove();
+            });
+        });
+    });
+</script>
+<!--SIGN UP-->
+<h1>登录智能门锁管理系统</h1>
+<div class="login-form">
+    <div class="close"></div>
+    <div class="head-info">
+        <label class="lbl-1"> </label>
+        <label class="lbl-2"> </label>
+        <label class="lbl-3"> </label>
+    </div>
+    <div class="clear"></div>
+    <div class="avtar">
+        <img src="{{ static('images/avtar.png') }}"/>
+    </div>
+    <div>
+        <input placeholder="请输入你的姓名" name="username" type="text" class="text">
+        <div class="key">
+            <input placeholder="请输入你的密码" name="password" type="password">
+        </div>
+    </div>
+    <div class="signin">
+        <input name="login-btn" type="submit" value="Login">
+    </div>
+</div>
+<div class="copy-rights">
+    <p>Copyright &copy; 2018.Company name All rights reserved.More Templates <a href="http://www.huangtongx.cn/"
+                                                                                target="_blank" title="智能门锁">智能门锁</a> -
+        Collect from <a href="http://www.huangtongx.cn/" title="智能门锁" target="_blank">智能门锁</a></p>
+</div>
+<script>
+    $(function () {
+        var nameInput = $('input[name=username]');
+        var passwdInput = $('input[name=password]');
+
+        $('input[name=login-btn]').click(function (e) {
+            e.preventDefault();
+            var username = nameInput.val();
+            var password = passwdInput.val();
+
+            zlajax.post({
+                'url': '{{ url_for('cms.login') }}',
+                'data': {
+                    'username': username,
+                    'password': password
+                },
+                'success': function (result) {
+                    if (result['code'] == 200) {
+                        window.location = '{{ url_for('cms.default') }}'
+                    } else {
+                        stalert.alertInfoToast(result.message);
+                        console.log(result);
+                    }
+                }
+            })
+
+        });
+    })
+</script>
+</body>
+</html>

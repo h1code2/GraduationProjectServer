@@ -12,7 +12,7 @@ colorama==0.4.0
 crypto==1.4.1
 cryptography==2.3.1
 cycler==0.10.0
-Django==2.1.2
+Django==2.2.13
 dnspython==1.15.0
 eventlet==0.24.1
 Flask==1.0.2
